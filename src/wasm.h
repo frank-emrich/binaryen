@@ -741,6 +741,7 @@ public:
     StringIterMoveId,
     StringSliceWTFId,
     StringSliceIterId,
+    ContBindId,
     ContNewId,
     ResumeId,
     NumExpressionIds
@@ -1939,6 +1940,18 @@ public:
 
   Expression* ref;
   Expression* num;
+
+  void finalize();
+};
+
+class ContBind : public SpecificExpression<Expression::ContBindId> {
+public:
+  ContBind(MixedArena& allocator) : args(allocator) {}
+
+  HeapType contTypeBefore;
+  HeapType contTypeAfter;
+  ExpressionList args;
+  Expression* cont;
 
   void finalize();
 };

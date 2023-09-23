@@ -1194,6 +1194,10 @@ struct InfoCollector
 
   void visitReturn(Return* curr) { addResult(curr->value); }
 
+  void visitContNew(ContNew* curr) {
+    // TODO: optimize when possible
+    addRoot(curr);
+  }
   void visitResume(Resume* curr) {
     // TODO: optimize when possible
     addRoot(curr);

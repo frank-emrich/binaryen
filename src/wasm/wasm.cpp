@@ -1319,6 +1319,14 @@ void StringSliceIter::finalize() {
   }
 }
 
+void ContNew::finalize() {
+  if (!(this->contType.isContinuation() &&
+        this->contType.getContinuation().ht.isSignature())) {
+    Fatal() << "ill-formed cont.new expression";
+  }
+  type = Type(this->contType, NonNullable);
+}
+
 ArenaVector<Type>& Resume::getSentTypes() {
   if (this->sentTypes.size() != this->handlerBlocks.size()) {
     Fatal() << "Types sent to blocks have not been determined, yet.";

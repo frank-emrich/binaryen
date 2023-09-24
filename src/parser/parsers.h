@@ -164,6 +164,7 @@ template<typename Ctx> Result<> makeStringSliceIter(Ctx&, Index);
 template<typename Ctx> Result<> makeContBind(Ctx&, Index);
 template<typename Ctx> Result<> makeContNew(Ctx&, Index);
 template<typename Ctx> Result<> makeResume(Ctx&, Index);
+template<typename Ctx> Result<> makeSuspend(Ctx&, Index);
 
 // Modules
 template<typename Ctx> MaybeResult<Index> maybeTypeidx(Ctx& ctx);
@@ -1509,6 +1510,13 @@ template<typename Ctx> Result<> makeContNew(Ctx& ctx, Index pos) {
 template<typename Ctx> Result<> makeResume(Ctx& ctx, Index pos) {
   return ctx.in.err("unimplemented instruction");
 }
+
+template<typename Ctx>
+Result<> makeSuspend(Ctx& ctx, Index pos) {
+  // FIXME(frank-emrich) ??
+  return ctx.in.err("unimplemented instruction");
+}
+
 
 // =======
 // Modules

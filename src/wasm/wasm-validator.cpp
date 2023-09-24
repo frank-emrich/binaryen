@@ -487,6 +487,7 @@ public:
   void visitContBind(ContBind* curr);
   void visitContNew(ContNew* curr);
   void visitResume(Resume* curr);
+  void visitSuspend(Suspend* curr);
 
   void visitFunction(Function* curr);
 
@@ -3221,6 +3222,14 @@ void FunctionValidator::visitResume(Resume* curr) {
     !getModule() || getModule()->features.hasTypedContinuations(),
     curr,
     "resume requires typed-continuatons [--enable-typed-continuations]");
+}
+
+void FunctionValidator::visitSuspend(Suspend* curr) {
+  // FIXME(frank-emrich) implement actual type-checking
+  shouldBeTrue(
+    !getModule() || getModule()->features.hasTypedContinuations(),
+    curr,
+    "suspend requires typed-continuatons [--enable-typed-continuations]");
 }
 
 void FunctionValidator::visitFunction(Function* curr) {

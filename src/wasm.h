@@ -744,6 +744,7 @@ public:
     ContBindId,
     ContNewId,
     ResumeId,
+    SuspendId,
     NumExpressionIds
   };
   Id _id;
@@ -1989,6 +1990,21 @@ private:
   // handlerBlocks[i] if suspending with tag handlerTags[i]. Not part of the
   // instruction's syntax, but stored here for subsequent use.
   ArenaVector<Type> sentTypes;
+};
+
+class Suspend : public SpecificExpression<Expression::SuspendId> {
+public:
+  Suspend(MixedArena& allocator) : args(allocator) {}
+
+  Name tag;
+  ExpressionList args;
+
+  // We need access to the module to obtain the signature of the tag,
+  // which determines this node's type.
+  void finalize(Module* mod);
+
+  // Noop, required for visitors.
+  void finalize();
 };
 
 // Globals

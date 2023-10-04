@@ -1,0 +1,14 @@
+(module
+
+  (type $ft1 (func             (result i32)))
+  (type $ct1 (cont $ft1))
+
+
+  (import "first" "t1" (tag $first (param i32) (result i32 )))
+  (tag $second (export "second") (param (ref $ct1)) (result i32))
+
+  (func $f2 (export "f2") (param $x i32) (result i32)
+    (suspend $first (local.get $x))
+  )
+
+)

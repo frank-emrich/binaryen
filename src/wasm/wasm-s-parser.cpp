@@ -1261,6 +1261,9 @@ Type SExpressionWasmBuilder::stringToType(std::string_view str,
   if (str.substr(0, 7) == "funcref" && (prefix || str.size() == 7)) {
     return Type(HeapType::func, Nullable);
   }
+  if (str.substr(0, 7) == "contref" && (prefix || str.size() == 7)) {
+    return Type(HeapType::cont, Nullable);
+  }
   if (str.substr(0, 9) == "externref" && (prefix || str.size() == 9)) {
     return Type(HeapType::ext, Nullable);
   }
@@ -1300,6 +1303,9 @@ Type SExpressionWasmBuilder::stringToType(std::string_view str,
   if (str.substr(0, 11) == "nullfuncref" && (prefix || str.size() == 11)) {
     return Type(HeapType::nofunc, Nullable);
   }
+  if (str.substr(0, 11) == "nullcontref" && (prefix || str.size() == 11)) {
+    return Type(HeapType::nocont, Nullable);
+  }
   if (allowError) {
     return Type::none;
   }
@@ -1311,6 +1317,9 @@ HeapType SExpressionWasmBuilder::stringToHeapType(std::string_view str,
                                                   bool prefix) {
   if (str.substr(0, 4) == "func" && (prefix || str.size() == 4)) {
     return HeapType::func;
+  }
+  if (str.substr(0, 4) == "cont" && (prefix || str.size() == 4)) {
+    return HeapType::cont;
   }
   if (str.substr(0, 2) == "eq" && (prefix || str.size() == 2)) {
     return HeapType::eq;
@@ -1350,6 +1359,9 @@ HeapType SExpressionWasmBuilder::stringToHeapType(std::string_view str,
   }
   if (str.substr(0, 6) == "nofunc" && (prefix || str.size() == 6)) {
     return HeapType::nofunc;
+  }
+  if (str.substr(0, 6) == "nocont" && (prefix || str.size() == 6)) {
+    return HeapType::nocont;
   }
   throw ParseException(std::string("invalid wasm heap type: ") +
                        std::string(str.data(), str.size()));
@@ -2886,11 +2898,11 @@ Expression* SExpressionWasmBuilder::makeContBind(Element& s) {
   auto ret = allocator.alloc<ContBind>();
 
   ret->contTypeBefore = parseHeapType(*s[1]);
-  if (!ret->contTypeBefore.isContinuation()) {
+  if (!ret->contTypeBefore.isDefinedContinuation()) {
     throw ParseException("expected continuation type", s[1]->line, s[1]->col);
   }
   ret->contTypeAfter = parseHeapType(*s[2]);
-  if (!ret->contTypeAfter.isContinuation()) {
+  if (!ret->contTypeAfter.isDefinedContinuation()) {
     throw ParseException("expected continuation type", s[2]->line, s[2]->col);
   }
 
@@ -2909,7 +2921,7 @@ Expression* SExpressionWasmBuilder::makeContNew(Element& s) {
   auto ret = allocator.alloc<ContNew>();
 
   ret->contType = parseHeapType(*s[1]);
-  if (!ret->contType.isContinuation()) {
+  if (!ret->contType.isDefinedContinuation()) {
     throw ParseException("expected continuation type", s[1]->line, s[1]->col);
   }
 
@@ -2923,7 +2935,7 @@ Expression* SExpressionWasmBuilder::makeResume(Element& s) {
   auto ret = allocator.alloc<Resume>();
 
   ret->contType = parseHeapType(*s[1]);
-  if (!ret->contType.isContinuation()) {
+  if (!ret->contType.isDefinedContinuation()) {
     throw ParseException("expected continuation type", s[1]->line, s[1]->col);
   }
 

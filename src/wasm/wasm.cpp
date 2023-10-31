@@ -1322,7 +1322,7 @@ void StringSliceIter::finalize() {
 void ContBind::finalize() { type = Type(this->contTypeAfter, NonNullable); }
 
 void ContNew::finalize() {
-  if (!(this->contType.isContinuation() &&
+  if (!(this->contType.isDefinedContinuation() &&
         this->contType.getContinuation().type.isSignature())) {
     Fatal() << "ill-formed cont.new expression";
   }
@@ -1340,7 +1340,7 @@ void Resume::finalize() {
   // Only performing some validation, but no finalization. The finalize(Module*)
   // function must have been called previously.
 
-  if (!(this->contType.isContinuation() &&
+  if (!(this->contType.isDefinedContinuation() &&
         this->contType.getContinuation().type.isSignature())) {
     Fatal() << "ill-formed Resume expression";
   }

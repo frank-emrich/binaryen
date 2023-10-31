@@ -317,6 +317,7 @@ public:
   enum BasicHeapType : uint32_t {
     ext,
     func,
+    cont,
     any,
     eq,
     i31,
@@ -329,8 +330,9 @@ public:
     none,
     noext,
     nofunc,
+    nocont
   };
-  static constexpr BasicHeapType _last_basic_type = nofunc;
+  static constexpr BasicHeapType _last_basic_type = nocont;
 
   // BasicHeapType can be implicitly upgraded to HeapType
   constexpr HeapType(BasicHeapType id) : id(id) {}
@@ -359,9 +361,15 @@ public:
 
   constexpr bool isBasic() const { return id <= _last_basic_type; }
   bool isFunction() const;
+  bool isContinuation() const;
   bool isData() const;
   bool isSignature() const;
-  bool isContinuation() const;
+  // Indicates whether the given type is a defined continuation
+  // type such as (cont $foo), but returns false on the common supertype cont of
+  // all continuation types.
+  // In other words, this function is analogous to isSignature, but not
+  // isFunction. The counterpart to the latter is isContinuation.
+  bool isDefinedContinuation() const;
   bool isStruct() const;
   bool isArray() const;
   bool isString() const;

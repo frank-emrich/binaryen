@@ -292,7 +292,7 @@ void WasmBinaryWriter::writeTypes() {
           writeType(type);
         }
       }
-    } else if (type.isContinuation()) {
+    } else if (type.isDefinedContinuation()) {
       o << S32LEB(BinaryConsts::EncodedType::Cont);
       writeHeapType(type.getContinuation().type);
     } else if (type.isStruct()) {
@@ -1489,6 +1489,9 @@ void WasmBinaryWriter::writeType(Type type) {
         case HeapType::func:
           o << S32LEB(BinaryConsts::EncodedType::funcref);
           return;
+        case HeapType::cont:
+          o << S32LEB(BinaryConsts::EncodedType::contref);
+          return;
         case HeapType::eq:
           o << S32LEB(BinaryConsts::EncodedType::eqref);
           return;
@@ -1521,6 +1524,9 @@ void WasmBinaryWriter::writeType(Type type) {
           return;
         case HeapType::nofunc:
           o << S32LEB(BinaryConsts::EncodedType::nullfuncref);
+          return;
+        case HeapType::nocont:
+          o << S32LEB(BinaryConsts::EncodedType::nullcontref);
           return;
       }
     }
@@ -1579,7 +1585,7 @@ void WasmBinaryWriter::writeHeapType(HeapType type) {
     }
   }
 
-  if (type.isSignature() || type.isContinuation() || type.isStruct() ||
+  if (type.isSignature() || type.isDefinedContinuation() || type.isStruct() ||
       type.isArray()) {
     o << S64LEB(getTypeIndex(type)); // TODO: Actually s33
     return;
@@ -1592,6 +1598,9 @@ void WasmBinaryWriter::writeHeapType(HeapType type) {
       break;
     case HeapType::func:
       ret = BinaryConsts::EncodedHeapType::func;
+      break;
+    case HeapType::cont:
+      ret = BinaryConsts::EncodedHeapType::cont;
       break;
     case HeapType::any:
       ret = BinaryConsts::EncodedHeapType::any;
@@ -1628,6 +1637,9 @@ void WasmBinaryWriter::writeHeapType(HeapType type) {
       break;
     case HeapType::nofunc:
       ret = BinaryConsts::EncodedHeapType::nofunc;
+      break;
+    case HeapType::nocont:
+      ret = BinaryConsts::EncodedHeapType::nocont;
       break;
   }
   o << S64LEB(ret); // TODO: Actually s33
@@ -1961,6 +1973,9 @@ bool WasmBinaryReader::getBasicType(int32_t code, Type& out) {
     case BinaryConsts::EncodedType::funcref:
       out = Type(HeapType::func, Nullable);
       return true;
+    case BinaryConsts::EncodedType::contref:
+      out = Type(HeapType::cont, Nullable);
+      return true;
     case BinaryConsts::EncodedType::externref:
       out = Type(HeapType::ext, Nullable);
       return true;
@@ -2000,6 +2015,9 @@ bool WasmBinaryReader::getBasicType(int32_t code, Type& out) {
     case BinaryConsts::EncodedType::nullfuncref:
       out = Type(HeapType::nofunc, Nullable);
       return true;
+    case BinaryConsts::EncodedType::nullcontref:
+      out = Type(HeapType::nocont, Nullable);
+      return true;
     default:
       return false;
   }
@@ -2008,6 +2026,9 @@ bool WasmBinaryReader::getBasicType(int32_t code, Type& out) {
 bool WasmBinaryReader::getBasicHeapType(int64_t code, HeapType& out) {
   switch (code) {
     case BinaryConsts::EncodedHeapType::func:
+      out = HeapType::func;
+      return true;
+    case BinaryConsts::EncodedHeapType::cont:
       out = HeapType::func;
       return true;
     case BinaryConsts::EncodedHeapType::ext:
@@ -2048,6 +2069,9 @@ bool WasmBinaryReader::getBasicHeapType(int64_t code, HeapType& out) {
       return true;
     case BinaryConsts::EncodedHeapType::nofunc:
       out = HeapType::nofunc;
+      return true;
+    case BinaryConsts::EncodedHeapType::nocont:
+      out = HeapType::nocont;
       return true;
     default:
       return false;
@@ -7710,7 +7734,7 @@ void WasmBinaryReader::visitContBind(ContBind* curr) {
   curr->contTypeAfter = getTypeByIndex(contTypeAfterIndex);
 
   for (auto& ct : {curr->contTypeBefore, curr->contTypeAfter}) {
-    if (!ct.isContinuation()) {
+    if (!ct.isDefinedContinuation()) {
       throwError("non-continuation type in cont.bind instruction " +
                  ct.toString());
     }
@@ -7736,7 +7760,7 @@ void WasmBinaryReader::visitContNew(ContNew* curr) {
 
   auto contTypeIndex = getU32LEB();
   curr->contType = getTypeByIndex(contTypeIndex);
-  if (!curr->contType.isContinuation()) {
+  if (!curr->contType.isDefinedContinuation()) {
     throwError("non-continuation type in cont.new instruction " +
                curr->contType.toString());
   }
@@ -7750,7 +7774,7 @@ void WasmBinaryReader::visitResume(Resume* curr) {
 
   auto contTypeIndex = getU32LEB();
   curr->contType = getTypeByIndex(contTypeIndex);
-  if (!curr->contType.isContinuation()) {
+  if (!curr->contType.isDefinedContinuation()) {
     throwError("non-continuation type in resume instruction " +
                curr->contType.toString());
   }

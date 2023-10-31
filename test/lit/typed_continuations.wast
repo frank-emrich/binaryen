@@ -19,16 +19,34 @@
 
  ;; CHECK-BINARY:      (type $2 (func (param (ref $ct)) (result (ref $ct))))
 
+ ;; CHECK-BINARY:      (type $3 (func (param contref nullcontref (ref func) (ref nocont)) (result contref)))
+
  ;; CHECK-BINARY:      (func $id (type $2) (param $x (ref $ct)) (result (ref $ct))
  ;; CHECK-BINARY-NEXT:  (local.get $x)
  ;; CHECK-BINARY-NEXT: )
  ;; CHECK-TEXT:      (type $2 (func (param (ref $ct)) (result (ref $ct))))
+
+ ;; CHECK-TEXT:      (type $3 (func (param contref nullcontref (ref func) (ref nocont)) (result contref)))
 
  ;; CHECK-TEXT:      (func $id (type $2) (param $x (ref $ct)) (result (ref $ct))
  ;; CHECK-TEXT-NEXT:  (local.get $x)
  ;; CHECK-TEXT-NEXT: )
  (func $id (param $x (ref $ct)) (result (ref $ct))
   (local.get $x)
+ )
+
+ ;; CHECK-BINARY:      (func $id2 (type $3) (param $w contref) (param $x nullcontref) (param $y (ref func)) (param $z (ref nocont)) (result contref)
+ ;; CHECK-BINARY-NEXT:  (local.get $z)
+ ;; CHECK-BINARY-NEXT: )
+ ;; CHECK-TEXT:      (func $id2 (type $3) (param $w contref) (param $x nullcontref) (param $y (ref func)) (param $z (ref nocont)) (result contref)
+ ;; CHECK-TEXT-NEXT:  (local.get $z)
+ ;; CHECK-TEXT-NEXT: )
+ (func $id2
+       (param $w contref)
+       (param $x nullcontref)
+       (param $y (ref cont))
+       (param $z (ref nocont)) (result contref)
+  (local.get $z)
  )
 )
 ;; CHECK-NODEBUG:      (type $0 (func (param i32) (result i32)))
@@ -37,6 +55,12 @@
 
 ;; CHECK-NODEBUG:      (type $2 (func (param (ref $1)) (result (ref $1))))
 
+;; CHECK-NODEBUG:      (type $3 (func (param contref nullcontref (ref func) (ref nocont)) (result contref)))
+
 ;; CHECK-NODEBUG:      (func $0 (type $2) (param $0 (ref $1)) (result (ref $1))
 ;; CHECK-NODEBUG-NEXT:  (local.get $0)
+;; CHECK-NODEBUG-NEXT: )
+
+;; CHECK-NODEBUG:      (func $1 (type $3) (param $0 contref) (param $1 nullcontref) (param $2 (ref func)) (param $3 (ref nocont)) (result contref)
+;; CHECK-NODEBUG-NEXT:  (local.get $3)
 ;; CHECK-NODEBUG-NEXT: )

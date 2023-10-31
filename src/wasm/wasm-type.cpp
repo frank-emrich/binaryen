@@ -115,7 +115,9 @@ struct HeapTypeInfo {
   ~HeapTypeInfo();
 
   constexpr bool isSignature() const { return kind == SignatureKind; }
-  constexpr bool isContinuation() const { return kind == ContinuationKind; }
+  constexpr bool isDefinedContinuation() const {
+    return kind == ContinuationKind;
+  }
   constexpr bool isStruct() const { return kind == StructKind; }
   constexpr bool isArray() const { return kind == ArrayKind; }
   constexpr bool isData() const { return isStruct() || isArray(); }
@@ -473,6 +475,7 @@ std::optional<HeapType> getBasicHeapTypeLUB(HeapType::BasicHeapType a,
     case HeapType::ext:
     case HeapType::func:
     case HeapType::exn:
+    case HeapType::cont:
       return std::nullopt;
     case HeapType::any:
       return {HeapType::any};
@@ -504,6 +507,7 @@ std::optional<HeapType> getBasicHeapTypeLUB(HeapType::BasicHeapType a,
     case HeapType::noext:
     case HeapType::nofunc:
     case HeapType::noexn:
+    case HeapType::nocont:
       // Bottom types already handled.
       break;
   }
@@ -930,6 +934,10 @@ FeatureSet Type::getFeatures() const {
                 feats |=
                   FeatureSet::ExceptionHandling | FeatureSet::ReferenceTypes;
                 return;
+              case HeapType::cont:
+              case HeapType::nocont:
+                feats |= FeatureSet::TypedContinuations;
+                return;
             }
           }
 
@@ -950,7 +958,7 @@ FeatureSet Type::getFeatures() const {
             if (sig.results.isTuple()) {
               feats |= FeatureSet::Multivalue;
             }
-          } else if (heapType->isContinuation()) {
+          } else if (heapType->isDefinedContinuation()) {
             feats |= FeatureSet::TypedContinuations;
           }
 
@@ -1163,6 +1171,14 @@ bool HeapType::isFunction() const {
   }
 }
 
+bool HeapType::isContinuation() const {
+  if (isBasic()) {
+    return id == cont;
+  } else {
+    return getHeapTypeInfo(*this)->isDefinedContinuation();
+  }
+}
+
 bool HeapType::isData() const {
   if (isBasic()) {
     return id == struct_ || id == array || id == string ||
@@ -1180,11 +1196,11 @@ bool HeapType::isSignature() const {
   }
 }
 
-bool HeapType::isContinuation() const {
+bool HeapType::isDefinedContinuation() const {
   if (isBasic()) {
     return false;
   } else {
-    return getHeapTypeInfo(*this)->isContinuation();
+    return getHeapTypeInfo(*this)->isDefinedContinuation();
   }
 }
 
@@ -1213,6 +1229,7 @@ bool HeapType::isBottom() const {
     switch (getBasic()) {
       case ext:
       case func:
+      case cont:
       case any:
       case eq:
       case i31:
@@ -1228,6 +1245,7 @@ bool HeapType::isBottom() const {
       case noext:
       case nofunc:
       case noexn:
+      case nocont:
         return true;
     }
   }
@@ -1248,7 +1266,7 @@ Signature HeapType::getSignature() const {
 }
 
 Continuation HeapType::getContinuation() const {
-  assert(isContinuation());
+  assert(isDefinedContinuation());
   return getHeapTypeInfo(*this)->continuation;
 }
 
@@ -1286,6 +1304,8 @@ std::optional<HeapType> HeapType::getSuperType() const {
       case noext:
       case func:
       case nofunc:
+      case cont:
+      case nocont:
       case any:
       case none:
       case exn:
@@ -1309,7 +1329,7 @@ std::optional<HeapType> HeapType::getSuperType() const {
     case HeapTypeInfo::SignatureKind:
       return func;
     case HeapTypeInfo::ContinuationKind:
-      return any;
+      return cont;
     case HeapTypeInfo::StructKind:
       return struct_;
     case HeapTypeInfo::ArrayKind:
@@ -1329,10 +1349,8 @@ size_t HeapType::getDepth() const {
   // implicit supertyping wrt basic types. A signature type always has one more
   // super, HeapType::func, etc.
   if (!isBasic()) {
-    if (isFunction()) {
+    if (isFunction() || isDefinedContinuation()) {
       depth++;
-    } else if (isContinuation()) {
-      // cont types <: any, thus nothing to add
     } else if (isStruct()) {
       // specific struct types <: struct <: eq <: any
       depth += 3;
@@ -1345,6 +1363,7 @@ size_t HeapType::getDepth() const {
     switch (getBasic()) {
       case HeapType::ext:
       case HeapType::func:
+      case HeapType::cont:
       case HeapType::any:
       case HeapType::exn:
         break;
@@ -1362,6 +1381,7 @@ size_t HeapType::getDepth() const {
         break;
       case HeapType::none:
       case HeapType::nofunc:
+      case HeapType::nocont:
       case HeapType::noext:
       case HeapType::noexn:
         // Bottom types are infinitely deep.
@@ -1380,6 +1400,8 @@ HeapType::BasicHeapType HeapType::getBottom() const {
         return nofunc;
       case exn:
         return noexn;
+      case cont:
+        return nocont;
       case any:
       case eq:
       case i31:
@@ -1397,6 +1419,8 @@ HeapType::BasicHeapType HeapType::getBottom() const {
         return nofunc;
       case noexn:
         return noexn;
+      case nocont:
+        return nocont;
     }
   }
   auto* info = getHeapTypeInfo(*this);
@@ -1404,7 +1428,7 @@ HeapType::BasicHeapType HeapType::getBottom() const {
     case HeapTypeInfo::SignatureKind:
       return nofunc;
     case HeapTypeInfo::ContinuationKind:
-      return none;
+      return nocont;
     case HeapTypeInfo::StructKind:
     case HeapTypeInfo::ArrayKind:
       return none;
@@ -1430,6 +1454,8 @@ HeapType::BasicHeapType HeapType::getTop() const {
       return ext;
     case noexn:
       return exn;
+    case nocont:
+      return cont;
     case ext:
     case func:
     case any:
@@ -1438,6 +1464,7 @@ HeapType::BasicHeapType HeapType::getTop() const {
     case struct_:
     case array:
     case exn:
+    case cont:
     case string:
     case stringview_wtf8:
     case stringview_wtf16:
@@ -1479,7 +1506,7 @@ std::vector<Type> HeapType::getTypeChildren() const {
     }
     return children;
   }
-  if (isContinuation()) {
+  if (isDefinedContinuation()) {
     return {};
   }
   WASM_UNREACHABLE("unexpected kind");
@@ -1602,7 +1629,7 @@ TypeNames DefaultTypeNameGenerator::getNames(HeapType type) {
     std::stringstream stream;
     if (type.isSignature()) {
       stream << "func." << funcCount++;
-    } else if (type.isContinuation()) {
+    } else if (type.isDefinedContinuation()) {
       stream << "cont." << contCount++;
     } else if (type.isStruct()) {
       stream << "struct." << structCount++;
@@ -1721,6 +1748,8 @@ bool SubTyper::isSubType(HeapType a, HeapType b) {
         return a.getTop() == HeapType::func;
       case HeapType::exn:
         return a.getTop() == HeapType::exn;
+      case HeapType::cont:
+        return a.getTop() == HeapType::cont;
       case HeapType::any:
         return a.getTop() == HeapType::any;
       case HeapType::eq:
@@ -1742,6 +1771,7 @@ bool SubTyper::isSubType(HeapType a, HeapType b) {
       case HeapType::noext:
       case HeapType::nofunc:
       case HeapType::noexn:
+      case HeapType::nocont:
         return false;
     }
   }
@@ -1856,6 +1886,8 @@ std::ostream& TypePrinter::print(Type type) {
             return os << "externref";
           case HeapType::func:
             return os << "funcref";
+          case HeapType::cont:
+            return os << "contref";
           case HeapType::any:
             return os << "anyref";
           case HeapType::eq:
@@ -1884,6 +1916,8 @@ std::ostream& TypePrinter::print(Type type) {
             return os << "nullfuncref";
           case HeapType::noexn:
             return os << "nullexnref";
+          case HeapType::nocont:
+            return os << "nullcontref";
         }
       }
     }
@@ -1906,6 +1940,8 @@ std::ostream& TypePrinter::print(HeapType type) {
         return os << "extern";
       case HeapType::func:
         return os << "func";
+      case HeapType::cont:
+        return os << "cont";
       case HeapType::any:
         return os << "any";
       case HeapType::eq:
@@ -1934,6 +1970,8 @@ std::ostream& TypePrinter::print(HeapType type) {
         return os << "nofunc";
       case HeapType::noexn:
         return os << "noexn";
+      case HeapType::nocont:
+        return os << "nocont";
     }
   }
 
@@ -1961,7 +1999,7 @@ std::ostream& TypePrinter::print(HeapType type) {
   }
   if (type.isSignature()) {
     print(type.getSignature());
-  } else if (type.isContinuation()) {
+  } else if (type.isDefinedContinuation()) {
     print(type.getContinuation());
   } else if (type.isStruct()) {
     print(type.getStruct(), names.fieldNames);

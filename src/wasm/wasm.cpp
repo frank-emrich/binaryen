@@ -1323,7 +1323,7 @@ void ContBind::finalize() { type = Type(this->contTypeAfter, NonNullable); }
 
 void ContNew::finalize() {
   if (!(this->contType.isContinuation() &&
-        this->contType.getContinuation().ht.isSignature())) {
+        this->contType.getContinuation().type.isSignature())) {
     Fatal() << "ill-formed cont.new expression";
   }
   type = Type(this->contType, NonNullable);

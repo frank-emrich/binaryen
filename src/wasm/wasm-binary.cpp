@@ -7719,9 +7719,9 @@ void WasmBinaryReader::visitContBind(ContBind* curr) {
   curr->cont = popNonVoidExpression();
 
   size_t paramsBefore =
-    curr->contTypeBefore.getContinuation().ht.getSignature().params.size();
+    curr->contTypeBefore.getContinuation().type.getSignature().params.size();
   size_t paramsAfter =
-    curr->contTypeAfter.getContinuation().ht.getSignature().params.size();
+    curr->contTypeAfter.getContinuation().type.getSignature().params.size();
   size_t argsNum = paramsBefore - paramsAfter;
   curr->args.resize(argsNum);
   for (size_t i = 0; i < argsNum; i++) {

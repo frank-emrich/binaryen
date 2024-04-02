@@ -293,7 +293,7 @@ void WasmBinaryWriter::writeTypes() {
           writeType(type);
         }
       }
-    } else if (type.isDefinedContinuation()) {
+    } else if (type.isCompositeContinuation()) {
       o << S32LEB(BinaryConsts::EncodedType::Cont);
       writeHeapType(type.getContinuation().type);
     } else if (type.isStruct()) {
@@ -1603,7 +1603,7 @@ void WasmBinaryWriter::writeHeapType(HeapType type) {
     }
   }
 
-  if (type.isSignature() || type.isDefinedContinuation() || type.isStruct() ||
+  if (type.isSignature() || type.isCompositeContinuation() || type.isStruct() ||
       type.isArray()) {
     o << S64LEB(getTypeIndex(type)); // TODO: Actually s33
     return;
@@ -7820,7 +7820,7 @@ void WasmBinaryReader::visitContBind(ContBind* curr) {
   curr->contTypeAfter = getTypeByIndex(contTypeAfterIndex);
 
   for (auto& ct : {curr->contTypeBefore, curr->contTypeAfter}) {
-    if (!ct.isDefinedContinuation()) {
+    if (!ct.isCompositeContinuation()) {
       throwError("non-continuation type in cont.bind instruction " +
                  ct.toString());
     }
@@ -7852,7 +7852,7 @@ void WasmBinaryReader::visitContNew(ContNew* curr) {
 
   auto contTypeIndex = getU32LEB();
   curr->contType = getTypeByIndex(contTypeIndex);
-  if (!curr->contType.isDefinedContinuation()) {
+  if (!curr->contType.isCompositeContinuation()) {
     throwError("non-continuation type in cont.new instruction " +
                curr->contType.toString());
   }
@@ -7866,7 +7866,7 @@ void WasmBinaryReader::visitResume(Resume* curr) {
 
   auto contTypeIndex = getU32LEB();
   curr->contType = getTypeByIndex(contTypeIndex);
-  if (!curr->contType.isDefinedContinuation()) {
+  if (!curr->contType.isCompositeContinuation()) {
     throwError("non-continuation type in resume instruction " +
                curr->contType.toString());
   }

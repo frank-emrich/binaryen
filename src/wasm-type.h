@@ -375,7 +375,7 @@ public:
   // all continuation types.
   // In other words, this function is analogous to isSignature, but not
   // isFunction. The counterpart to the latter is isContinuation.
-  bool isDefinedContinuation() const;
+  bool isCompositeContinuation() const;
   bool isStruct() const;
   bool isArray() const;
   bool isException() const;

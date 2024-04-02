@@ -115,7 +115,7 @@ struct HeapTypeInfo {
   ~HeapTypeInfo();
 
   constexpr bool isSignature() const { return kind == SignatureKind; }
-  constexpr bool isDefinedContinuation() const {
+  constexpr bool isCompositeContinuation() const {
     return kind == ContinuationKind;
   }
   constexpr bool isStruct() const { return kind == StructKind; }
@@ -958,7 +958,7 @@ FeatureSet Type::getFeatures() const {
             if (sig.results.isTuple()) {
               feats |= FeatureSet::Multivalue;
             }
-          } else if (heapType->isDefinedContinuation()) {
+          } else if (heapType->isCompositeContinuation()) {
             feats |= FeatureSet::TypedContinuations;
           }
 
@@ -1175,7 +1175,7 @@ bool HeapType::isContinuation() const {
   if (isBasic()) {
     return id == cont;
   } else {
-    return getHeapTypeInfo(*this)->isDefinedContinuation();
+    return getHeapTypeInfo(*this)->isCompositeContinuation();
   }
 }
 
@@ -1196,11 +1196,11 @@ bool HeapType::isSignature() const {
   }
 }
 
-bool HeapType::isDefinedContinuation() const {
+bool HeapType::isCompositeContinuation() const {
   if (isBasic()) {
     return false;
   } else {
-    return getHeapTypeInfo(*this)->isDefinedContinuation();
+    return getHeapTypeInfo(*this)->isCompositeContinuation();
   }
 }
 
@@ -1266,7 +1266,7 @@ Signature HeapType::getSignature() const {
 }
 
 Continuation HeapType::getContinuation() const {
-  assert(isDefinedContinuation());
+  assert(isCompositeContinuation());
   return getHeapTypeInfo(*this)->continuation;
 }
 
@@ -1349,7 +1349,7 @@ size_t HeapType::getDepth() const {
   // implicit supertyping wrt basic types. A signature type always has one more
   // super, HeapType::func, etc.
   if (!isBasic()) {
-    if (isFunction() || isDefinedContinuation()) {
+    if (isFunction() || isCompositeContinuation()) {
       depth++;
     } else if (isStruct()) {
       // specific struct types <: struct <: eq <: any
@@ -1506,7 +1506,7 @@ std::vector<Type> HeapType::getTypeChildren() const {
     }
     return children;
   }
-  if (isDefinedContinuation()) {
+  if (isCompositeContinuation()) {
     return {};
   }
   WASM_UNREACHABLE("unexpected kind");
@@ -1629,7 +1629,7 @@ TypeNames DefaultTypeNameGenerator::getNames(HeapType type) {
     std::stringstream stream;
     if (type.isSignature()) {
       stream << "func." << funcCount++;
-    } else if (type.isDefinedContinuation()) {
+    } else if (type.isCompositeContinuation()) {
       stream << "cont." << contCount++;
     } else if (type.isStruct()) {
       stream << "struct." << structCount++;
@@ -1999,7 +1999,7 @@ std::ostream& TypePrinter::print(HeapType type) {
   }
   if (type.isSignature()) {
     print(type.getSignature());
-  } else if (type.isDefinedContinuation()) {
+  } else if (type.isCompositeContinuation()) {
     print(type.getContinuation());
   } else if (type.isStruct()) {
     print(type.getStruct(), names.fieldNames);
